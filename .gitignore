@@ -1,0 +1,16 @@
+# Secret Environment Variables
+.env
+
+# Database & Application Persistent Data
+postgres_data/
+pgadmin_data/
+
+# Data Files & Shared Folders
+billing_data/
+data/
+raw_data/
+
+# Python Cache & System Files
+__pycache__/
+*.pyc
+.DS_Store
