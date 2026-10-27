@@ -25,7 +25,6 @@ def etl_billing_to_db():
     for file in csv_files:
         file_name = os.path.basename(file)
 
-        # --- เช็กว่าไฟล์เคยโหลดแล้วหรือยัง ---
         cursor.execute(
             "SELECT 1 FROM warehouse.etl_file_log WHERE file_name = %s", (file_name,))
         if cursor.fetchone():
@@ -173,7 +172,6 @@ def etl_billing_to_db():
                     print(
                         f"[INSERT] Added new record JOB={row['JOB  NO.']} INV={row['INV  NO.']}")
 
-            # log ว่าไฟล์นี้โหลดสำเร็จ
             cursor.execute(
                 "INSERT INTO warehouse.etl_file_log (file_name, status) VALUES (%s, %s)", (file_name, "SUCCESS"))
             conn.commit()

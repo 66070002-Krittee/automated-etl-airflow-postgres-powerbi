@@ -26,10 +26,8 @@ def extract_address_fixed(csv_file):
 
     for line in lines:
         if "JOB  NO." in line:
-            # เอาเฉพาะข้อความก่อน "JOB  NO."
             line1 = line.split("JOB  NO.")[0].strip().replace(",", "")
         elif "CREDIT  TERM" in line:
-            # เอาเฉพาะข้อความก่อน "CREDIT  TERM"
             line2 = line.split("CREDIT  TERM")[0].strip().replace(",", "")
 
     return f"{line1} {line2}".strip() if line1 or line2 else None
@@ -41,18 +39,15 @@ def extract_vehicle_and_location(csv_file):
     with open(csv_file, "r", encoding="utf-8-sig") as f:
         for line in f:
             if "ค่าบริการรับ - ส่งสินค้า" in line:
-                # ดึง vehicle size เช่น "4W"
                 match_vehicle = re.search(
                     r"ค่าบริการรับ\s*-\s*ส่งสินค้า\s*(.+?)\s*\(", line)
                 if match_vehicle:
                     vehicle_size = match_vehicle.group(1).strip()
 
-                # ดึง pickup/dropoff จากวงเล็บ เช่น (PAT - RAMA 3)
                 match_loc = re.search(r"\(([^)]+)\)", line)
                 if match_loc:
                     loc_text = match_loc.group(1)
                     location_names = [x.strip() for x in loc_text.split("-")]
-                    # ถ้าเจอแค่ 1 จุด → เติม "-" ให้ครบ 2 จุด
                     if len(location_names) == 1:
                         location_names.append("-")
                 break
@@ -65,7 +60,7 @@ def extract_advance_from_csv(csv_file):
         for line in f:
             if "รวมยอด" in line or "SUM" in line:
                 parts = [p.strip() for p in line.split(",")]
-                if len(parts) > 9:   # ช่องที่ 9 = index 9
+                if len(parts) > 9:
                     val = parts[9].strip()
                     try:
                         return float(val.replace(",", ""))
@@ -105,15 +100,13 @@ def extract_inv_no(csv_file):
                 parts = [p.strip().replace('"', '') for p in line.split(",")]
                 for i, p in enumerate(parts):
                     if "BOOKING" in p.upper() and "NO" in p.upper():
-                        # ข้ามช่องว่าง 1 ช่อง แล้วดึงค่าถัดไป
                         if i + 2 < len(parts):
                             val = parts[i + 2].strip()
                             if val:
                                 return val
-            # กรณีไม่เจอ BOOKING NO. แต่เจอ CUSTOMER → fallback ไปอ่านคอลัมน์ J (index 9)
             elif "CUSTOMER" in line.upper():
                 parts = [p.strip().replace('"', '') for p in line.split(",")]
-                if len(parts) > 9:   # คอลัมน์ J = index 9
+                if len(parts) > 9:
                     val = parts[9].strip()
                     if val:
                         return val
@@ -129,7 +122,6 @@ def extract_tax_id(csv_file):
                     if "TAX  ID" in p.upper():
                         if i + 1 < len(parts):
                             raw_val = parts[i + 1].strip()
-                            # ถ้าเป็น scientific notation เช่น 1.05556E+11 → แปลงเป็นเลขเต็ม
                             try:
                                 if "E" in raw_val.upper():
                                     return str(int(float(raw_val)))
@@ -154,7 +146,6 @@ def extract_shipper_name(csv_file):
                 if collected:
                     return " ".join(collected).strip()
             else:
-                # fallback กรณีไม่มี comma
                 match = re.search(
                     r"SHIPPING\s*NAME\s*[:]\s*(.+)", line, re.IGNORECASE)
                 if match:
@@ -170,29 +161,24 @@ def extract_direction(csv_file):
                 idx = parts.index("IN  BOUND / OUT  BOUND")
                 collected = []
                 for p in parts[idx+1:]:
-                    # ถ้าเจอ GWT. ให้หยุด
                     if "GWT." in p.upper():
                         break
                     if p and p != ":":
                         collected.append(p)
                 if collected:
                     direction_part = " ".join(collected).strip().upper()
-                    # แปลงให้เหลือแค่ IN หรือ OUT
                     if "IN" in direction_part:
                         return "IN"
                     elif "OUT" in direction_part:
                         return "OUT"
             else:
-                # fallback กรณีไม่มี comma
                 match = re.search(
                     r"IN\s*BOUND\s*/\s*OUT\s*BOUND\s*[:]\s*(.+)", line, re.IGNORECASE)
                 if match:
                     direction_part = match.group(1).strip().upper()
-                    # ตัด GWT. ออกถ้ามีตามมา
                     if "GWT." in direction_part:
                         direction_part = direction_part.split("GWT.")[
                             0].strip()
-                    # แปลงให้เหลือแค่ IN หรือ OUT
                     if "IN" in direction_part:
                         return "IN"
                     elif "OUT" in direction_part:
@@ -205,14 +191,12 @@ def extract_loading_type(csv_file):
         for line in f:
             if "VOLUMN" in line:
                 parts = [p.strip() for p in line.split(",")]
-                idx = 9  # เริ่มจากช่องที่ 9
+                idx = 9
                 while idx < len(parts):
                     val = parts[idx]
-                    # ถ้าเจอค่าเป็น VOLUMN หรือ ":" หรือว่าง → ข้ามไปช่องถัดไป
                     if val in ["VOLUMN", ":"]:
                         idx += 1
                         continue
-                    # ตัดคำว่า EXPORT / IMPORT / IMP ออก
                     loading_type = re.sub(
                         r"\bEXPORT\b|\bIMPORT\b|\bIMP.\b", "", val, flags=re.IGNORECASE
                     ).strip()
@@ -231,7 +215,6 @@ def etl_billing_from_csv():
     for csv_file in csv_files:
         file_name = os.path.basename(csv_file)
 
-        # เช็กว่าไฟล์เคยอ่านหรือยัง
         cursor.execute(
             "SELECT 1 FROM warehouse.etl_file_log WHERE file_name = %s", (file_name,))
         if cursor.fetchone():
@@ -261,8 +244,7 @@ def etl_billing_from_csv():
             if not inv_no:
                 raise ValueError("⚠️ Invoice number not found")
 
-            # ถ้า inv_no มี A/B/C ต่อท้าย → เพิ่มเข้าไปใน job_no ด้วย
-            suffix = inv_no.strip()[-1]  # ตัวอักษรสุดท้าย
+            suffix = inv_no.strip()[-1]
             if suffix in ["A", "B", "C"]:
                 job_no = f"{job_no}{suffix}"
 
@@ -383,10 +365,10 @@ def etl_billing_from_csv():
     conn.close()
 
 
+# --- Airflow DAG ---
 with DAG(
     dag_id="etl_invoice_to_db",
     start_date=datetime(2026, 7, 18),
-    # หรือเปลี่ยนเป็น "0 * * * *" ถ้าอยากรันทุกชั่วโมง
     schedule_interval="*/5 * * * *",
     catchup=False,
 ) as dag:

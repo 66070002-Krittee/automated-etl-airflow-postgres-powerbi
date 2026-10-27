@@ -272,7 +272,7 @@ def process_billing_summary():
         df = df.applymap(clean_datetime_and_time)
 
         # ------------------------------------------
-        # ✅ Map คอลัมน์ SHIPPER จาก SHIPPER_MAP
+        #  Map คอลัมน์ SHIPPER จาก SHIPPER_MAP
         # ------------------------------------------
         if "SHIPPER" in df.columns:
             df["SHIPPER"] = df["SHIPPER"].apply(
@@ -281,7 +281,7 @@ def process_billing_summary():
             )
 
         # ------------------------------------------
-        # ✅ Map คอลัมน์ CUSTOMS จาก CUSTOMS_MAP
+        #  Map คอลัมน์ CUSTOMS จาก CUSTOMS_MAP
         # ------------------------------------------
         if "CUSTOMS" in df.columns:
             df["CUSTOMS"] = df["CUSTOMS"].apply(
@@ -293,6 +293,7 @@ def process_billing_summary():
         print(f"บันทึกไฟล์เรียบร้อย: {output_file}")
 
 
+# --- Airflow DAG ---
 with DAG(
     dag_id="etl_billing_to_csv",
     start_date=dt(2026, 8, 25),

@@ -1,8 +1,5 @@
-# ใช้ image Airflow เวอร์ชันที่คุณใช้อยู่เป็น base
 FROM apache/airflow:2.9.1
 
-# คัดลอก requirements.txt เข้าไปใน container
 COPY requirements.txt /requirements.txt
 
-# ติดตั้ง dependencies ที่ต้องใช้
 RUN pip install --no-cache-dir -r /requirements.txt

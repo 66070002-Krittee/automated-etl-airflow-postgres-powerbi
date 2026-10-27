@@ -13,13 +13,10 @@ def clean_datetime_and_time(val):
     if pd.isna(val):
         return val
 
-    # 1. กรณีเป็นประเภทวันที่ (Datetime / Timestamp)
     if isinstance(val, (pd.Timestamp, datetime.datetime, datetime.date)):
         return val.strftime('%d/%m/%Y')
 
-    # 2. กรณีเป็นข้อความ (String) ที่มีเวลา 0:00 หรือ 00:00:00 ติดมา
     if isinstance(val, str):
-        # ใช้ Regular Expression ตัดเฉพาะส่วนเวลาท้ายวันที่ออก
         return re.sub(r'(\b\d{1,4}[/-]\d{1,2}[/-]\d{1,4})\s+\d{1,2}:\d{2}(:\d{2})?\b', r'\1', val)
 
     return val
@@ -36,8 +33,7 @@ def export_best_sheet_to_csv(file_path, output_folder, seen_jobs):
         if job_number in seen_jobs:
             if base_name not in seen_jobs[job_number]:
                 seen_jobs[job_number].append(base_name)
-                suffix_index = len(seen_jobs[job_number]) - 1  # เริ่มจาก 1
-                # สร้าง suffix เป็น a, b, c, ...
+                suffix_index = len(seen_jobs[job_number]) - 1
                 suffix = chr(ord('a') + suffix_index - 1)
                 job_number = f"{job_number}{suffix}"
                 print(
@@ -110,18 +106,17 @@ def run_excel_pipeline():
     excel_files = [f for f in glob.glob(
         search_pattern) if not os.path.basename(f).startswith("~")]
 
-    seen_jobs = {}  # เก็บ job number ที่เจอแล้ว
+    seen_jobs = {}
 
     for file in excel_files:
         export_best_sheet_to_csv(file, output_folder, seen_jobs)
 
-    # สรุปท้าย pipeline ว่า job ไหนมีหลายไฟล์
     for job, files in seen_jobs.items():
         if len(files) > 1:
             print(f"[SUMMARY] Job {job} มีหลายไฟล์: {', '.join(files)}")
 
 
-# สร้าง DAG
+# --- Airflow DAG ---
 with DAG(
     dag_id="etl_invoice_to_csv",
     start_date=dt(2026, 8, 17),
